@@ -53,29 +53,28 @@ function Find-Package {
 	    if($request.Credential) { $Header = (Get-GitHubAuthHeader $request.Credential) }
 	    
 	    #write-debug "In $($ProviderName)- Find-Package {0}" $(help New-SoftwareIdentity | out-string)
-	    ForEach($gist in (Invoke-RestMethod "https://api.github.com/users/$($Name)/gists" -Header $Header)) {
+	    ForEach($repo in (Invoke-RestMethod "https://api.github.com/users/$($Name)/repos" -Header $Header)) {
 	    	
 	    	if($request.IsCancelled){break}
 	        
-	        $FileName = ($gist.files| Get-Member -MemberType NoteProperty).Name
-	        
-	        write-debug "In $($ProviderName)- Find-Package found file {0}" $FileName
-	        $rawUrl = ($gist.files).($FileName).raw_url
-	        
-	        if($rawUrl -And ($FileName -match $names)) {
+	        write-debug "In $($ProviderName)- Find-Package found file {0}" $repo.name	        
+        
+	        $fastPackageReference = $repo.archive_url.Replace('api.','').Replace('/repos','').Replace('{archive_format}','archive').Replace('{/ref}','/master.zip')
+	        	        
+	        #if($rawUrl -And ($FileName -match $names)) {
 	            $SWID = @{
 	                version              = "1.0"
 	                versionScheme        = "semver"
-	                fastPackageReference = $rawUrl
-	                name                 = $FileName
+	                fastPackageReference = $fastPackageReference
+	                name                 = $repo.name
 	                source               = $Name
-	                summary              = ($gist.description).tostring()
-	                searchKey            = $FileName.split('.')[0]
+	                summary              = ($repo.description).tostring()
+	                searchKey            = $repo.name
 	            }           
 	            
 	            $SWID.fastPackageReference = $SWID | ConvertTo-JSON -Compress
 	            New-SoftwareIdentity @SWID
-	        }
+	        #}
 	    }
 	}
 }
@@ -90,13 +89,22 @@ function Install-Package {
 	
 	if(!(Test-Path $GitHubPath)) { md $GitHubPath | Out-Null }	
 	
-	$psFileName = Split-Path -Leaf $rawUrl
-	$targetOut = "$($GitHubPath)\$($psFileName)"
+	#$psFileName = Split-Path -Leaf $rawUrl
+	#$targetOut = "$($GitHubPath)\$($psFileName)"
 	
-	Invoke-RestMethod -Uri $rawUrl | 
-	    Set-Content -Encoding Ascii $targetOut
+	#Invoke-RestMethod -Uri $rawUrl | 
+	#    Set-Content -Encoding Ascii $targetOut
 	
-	## Update the catalog of gists installed	
+	$TempZipFile = (Split-Path -Leaf ([System.IO.Path]::GetTempFileName())).Replace(".tmp",".zip")
+	$TempZipFile = Join-Path $GitHubPath $TempZipFile
+		
+	Invoke-RestMethod -Uri $rawUrl -OutFile $TempZipFile 	
+	
+	#write-debug "In $($ProviderName) - Install-Package Expand-Zip - {0} {1}" $TempZipFile $GitHubPath
+	write-debug "In $($ProviderName) - Expand-Zip -ZipPath {0} -OutputPath {1}" $TempZipFile $GitHubPath
+	
+	#Expand-Zip -ZipPath $TempZipFile -OutputPath $GitHubPath
+	
 	($fastPackageReference | ConvertFrom-Json) |
 	     Export-Csv -Path $CSVFilename -Append -NoTypeInformation -Encoding ASCII -Force
 }

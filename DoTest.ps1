@@ -1,0 +1,1 @@
+.\InstallProvider.ps1; start powershell
