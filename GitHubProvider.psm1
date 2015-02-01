@@ -1,5 +1,8 @@
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+Add-Type -AssemblyName System.IO.Compression
+
 $Providername = "GitHub"
-$GitHubPath     = "$env:LOCALAPPDATA\OneGet\GitHub"
+$GitHubPath   = "$env:LOCALAPPDATA\OneGet\GitHub"
 $CSVFilename  = "$($GitHubPath)\OneGetData.csv"
 
 function Get-GitHubAuthHeader {
@@ -16,6 +19,16 @@ function Get-GitHubAuthHeader {
     }
 }
 
+function Expand-ZIPFile($file, $destination) {
+
+    $shell = new-object -com shell.application
+    $zip   = $shell.NameSpace($file)
+
+    foreach($item in $zip.items()) {
+        $shell.Namespace($destination).copyhere($item)
+    }
+}
+
 function Initialize-Provider     { write-debug "In $($Providername) - Initialize-Provider" }
 function Get-PackageProviderName { return $Providername }
 
@@ -28,9 +41,9 @@ function Resolve-PackageSource {
     $IsValidated  = $true
     
     foreach($Name in @($request.PackageSources)) {
-    	$Location = "https://api.github.com/users/$($Name)/gists"
+    	$Location = "https://api.github.com/users/$($Name)/repos"
     	
-    	write-debug "In $($ProviderName)- Resolve-PackageSources gist: {0}" $Location
+    	write-debug "In $($ProviderName)- Resolve-PackageSources repo: {0}" $Location
 
         New-Object Microsoft.OneGet.MetaProvider.PowerShell.PackageSource $Name,$Location,$IsTrusted,$IsRegistered,$IsValidated
     }        
@@ -50,9 +63,8 @@ function Find-Package {
 	    
 	    write-debug "In $($ProviderName)- Find-Package for user {0}" $Name
 	    
-	    if($request.Credential) { $Header = (Get-GitHubAuthHeader $request.Credential) }
+	    if($request.Credential) { $Header = (Get-GitHubAuthHeader $request.Credential) }	    
 	    
-	    #write-debug "In $($ProviderName)- Find-Package {0}" $(help New-SoftwareIdentity | out-string)
 	    ForEach($repo in (Invoke-RestMethod "https://api.github.com/users/$($Name)/repos" -Header $Header)) {
 	    	
 	    	if($request.IsCancelled){break}
@@ -61,7 +73,7 @@ function Find-Package {
         
 	        $fastPackageReference = $repo.archive_url.Replace('api.','').Replace('/repos','').Replace('{archive_format}','archive').Replace('{/ref}','/master.zip')
 	        	        
-	        #if($rawUrl -And ($FileName -match $names)) {
+	        if($repo.name -match $names) {
 	            $SWID = @{
 	                version              = "1.0"
 	                versionScheme        = "semver"
@@ -74,7 +86,7 @@ function Find-Package {
 	            
 	            $SWID.fastPackageReference = $SWID | ConvertTo-JSON -Compress
 	            New-SoftwareIdentity @SWID
-	        #}
+	        }
 	    }
 	}
 }
@@ -87,23 +99,17 @@ function Install-Package {
 	
 	write-debug "In $($ProviderName) - Install-Package - {0}" $rawUrl
 	
-	if(!(Test-Path $GitHubPath)) { md $GitHubPath | Out-Null }	
-	
-	#$psFileName = Split-Path -Leaf $rawUrl
-	#$targetOut = "$($GitHubPath)\$($psFileName)"
-	
-	#Invoke-RestMethod -Uri $rawUrl | 
-	#    Set-Content -Encoding Ascii $targetOut
+	if(!(Test-Path $GitHubPath)) { md $GitHubPath | Out-Null }		
 	
 	$TempZipFile = (Split-Path -Leaf ([System.IO.Path]::GetTempFileName())).Replace(".tmp",".zip")
 	$TempZipFile = Join-Path $GitHubPath $TempZipFile
 		
 	Invoke-RestMethod -Uri $rawUrl -OutFile $TempZipFile 	
 	
-	#write-debug "In $($ProviderName) - Install-Package Expand-Zip - {0} {1}" $TempZipFile $GitHubPath
 	write-debug "In $($ProviderName) - Expand-Zip -ZipPath {0} -OutputPath {1}" $TempZipFile $GitHubPath
-	
-	#Expand-Zip -ZipPath $TempZipFile -OutputPath $GitHubPath
+
+	[System.IO.Compression.ZipFile]::ExtractToDirectory($TempZipFile, $GitHubPath)
+	Remove-Item $TempZipFile
 	
 	($fastPackageReference | ConvertFrom-Json) |
 	     Export-Csv -Path $CSVFilename -Append -NoTypeInformation -Encoding ASCII -Force
