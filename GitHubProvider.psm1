@@ -107,12 +107,15 @@ function Install-Package {
 	Invoke-RestMethod -Uri $rawUrl -OutFile $TempZipFile 	
 	
 	write-debug "In $($ProviderName) - Expand-Zip -ZipPath {0} -OutputPath {1}" $TempZipFile $GitHubPath
+	#https://github.com/dfinke/BladePS/archive/master.zip
+	
+	write-verbose "Package intstall location {0}\{1}-master" $GitHubPath ($rawUrl.split("/")[4])
 
 	[System.IO.Compression.ZipFile]::ExtractToDirectory($TempZipFile, $GitHubPath)
 	Remove-Item $TempZipFile
 	
 	($fastPackageReference | ConvertFrom-Json) |
-	     Export-Csv -Path $CSVFilename -Append -NoTypeInformation -Encoding ASCII -Force
+	     Export-Csv -Path $CSVFilename -Append -NoTypeInformation -Encoding ASCII -Force	
 }
 
 function ConvertTo-HashTable {
