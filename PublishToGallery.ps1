@@ -3,7 +3,7 @@ $p = @{
     NuGetApiKey = $NuGetApiKey 
     LicenseUri = "https://github.com/dfinke/OneGetGistProvider/blob/master/LICENSE" 
     Tag = "Github","OneGet","Provider","Start-Automating"
-    ReleaseNote = "-VERBOSE displays the location of the installed package"
+    ReleaseNote = "Fixed summary property error when it is null in GitHub"
     ProjectUri = "https://github.com/dfinke/OneGetGitHubProvider"
 }
 
