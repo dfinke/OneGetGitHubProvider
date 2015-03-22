@@ -72,7 +72,13 @@ function Find-Package {
 	        write-debug "In $($ProviderName)- Find-Package found file {0}" $repo.name	        
         
 	        $fastPackageReference = $repo.archive_url.Replace('api.','').Replace('/repos','').Replace('{archive_format}','archive').Replace('{/ref}','/master.zip')
-	        	        
+	        
+		if($repo.description -eq $null) {
+		    $summary = ""
+		} else {
+		    $summary = ($repo.description).tostring()
+		}
+		
 	        if($repo.name -match $names) {
 	            $SWID = @{
 	                version              = "1.0"
@@ -80,7 +86,7 @@ function Find-Package {
 	                fastPackageReference = $fastPackageReference
 	                name                 = $repo.name
 	                source               = $Name
-	                summary              = ($repo.description).tostring()
+	                summary              = $summary
 	                searchKey            = $repo.name
 	            }           
 	            
