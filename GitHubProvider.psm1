@@ -45,7 +45,7 @@ function Resolve-PackageSource {
     	
     	write-debug "In $($ProviderName)- Resolve-PackageSources repo: {0}" $Location
 
-        New-Object Microsoft.OneGet.MetaProvider.PowerShell.PackageSource $Name,$Location,$IsTrusted,$IsRegistered,$IsValidated
+        New-PackageSource $Name $Location $IsTrusted $IsRegistered $IsValidated
     }        
 }
 
@@ -85,7 +85,7 @@ function Find-Package {
 	                versionScheme        = "semver"
 	                fastPackageReference = $fastPackageReference
 	                name                 = $repo.name
-	                source               = $Name
+	                source               = "GitHub/$($Name)"
 	                summary              = $summary
 	                searchKey            = $repo.name
 	            }           

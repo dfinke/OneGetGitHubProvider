@@ -2,8 +2,8 @@ $p = @{
     Name = "GitHubProvider"
     NuGetApiKey = $NuGetApiKey 
     LicenseUri = "https://github.com/dfinke/OneGetGistProvider/blob/master/LICENSE" 
-    Tag = "Github","OneGet","Provider","Start-Automating"
-    ReleaseNote = "Fixed summary property error when it is null in GitHub"
+    Tag = "Github","PackageManagement","Provider"
+    ReleaseNote = "Updated to work with rename to PackageManagement"
     ProjectUri = "https://github.com/dfinke/OneGetGitHubProvider"
 }
 
