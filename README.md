@@ -6,3 +6,24 @@ This PowerShell module implements the PackageManagement PowerShell provider SDK
 
 **NOTE**
 * Works only on .NET 4.5 for now. It uses `[System.IO.Compression.ZipFile]::ExtractToDirectory` working on resolving why Expand-Zip and New-Object -COM Shell.Application fail (Need to find a general way to handle unzipping for v5 and previous releases)
+
+see http://www.powershellmagazine.com/2015/01/14/powershell-oneget-gist-as-a-package/
+
+How to install - PS:
+```powershell
+Install-Module -Name GitHubProvider
+```
+
+or, alternate:
+```powershell
+Install-PackageProvider GitHubProvider
+Import-PackageProvider GitHub
+```
+
+How to use:
+```powershell
+# show repos
+Find-Package -ProviderName GitHub -source USERNAME REPONAME
+
+Install-Package -ProviderName GitHub -source USERNAME REPONAME
+```
